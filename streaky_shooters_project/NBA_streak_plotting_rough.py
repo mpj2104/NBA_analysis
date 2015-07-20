@@ -7,15 +7,11 @@ Created on Mon Jun  1 16:36:53 2015
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import numpy as np
-import pandas as pd
-import sqlite3
-from sqlalchemy import create_engine
 import scipy.spatial as spatial
+import numpy as np
 #import scipy.stats.pearsonr
 
 specific_players = streak_stats.player_name.tolist()
-
 # establish cursor functions for identifying scatter points
 def fmt(x, y):
     return 'x: {x:0.2f}\ny: {y:0.2f}'.format(x=x, y=y)
@@ -99,12 +95,12 @@ ax = fig.add_subplot(1, 1, 1)
 #total_streaks = total_streaks[np.nonzero(total_streaks)]
 #ax.hist(total_streaks,60,lw=1,fc = (0,0,1,0.6))
 ax.hist(streak_stats.total_streaks,70,lw=1,fc = (0,0,1,0.6))
-plt.plot((20, 20), (0, 35), 'r-')
+plt.plot((24, 24), (0, 35), 'r-')
 ax.set_ylim([0, 35])
 ax.set_xlabel('NUMBER OF STREAKS')
 ax.set_ylabel('NUMBER OF PLAYERS')
 ax.set_title('NBA 2013-14 and 2014-15 Total Streak Distribution')
-ax.text(21, 27, '75th percentile' + '\n' + '        cutoff', color = 'r')
+ax.text(25, 27, '80th percentile' + '\n' + '        cutoff', color = 'r')
 plt.grid()
 plt.show()
 
@@ -179,18 +175,16 @@ fig = plt.figure(4);plt.clf()
 #fig.set_size_inches(12,6)
 ax = fig.add_subplot(1, 1, 1)
 xx = 100*np.array(streak_stats.season_tot_FGP_15ft)
-yy_made = np.array(streak_stats.num_made_streaks)
-#yy_miss = np.array(streak_stats.num_miss_streaks)
-#ax.scatter(player_FGP,made_streaks,c = (200/256,0/256,0/256,0.75),s=total_streaks,marker = 'o')
-#ax.scatter(player_FGP,miss_streaks,c = (0/256,0/256,200/256,0.75),s=total_streaks,marker = '^')
-#ax.scatter(xx,yy_made,color=(122/256,20/256,212/256))
-sc=ax.scatter(xx,yy_made,c=streak_stats.pct_made_streaks, s=60, cmap = mpl.cm.seismic)
+yy_made = np.array(streak_stats.total_streaks)
+#color_feature = (streak_stats.pct_made_streaks-min(streak_stats.pct_made_streaks))/(max(streak_stats.pct_made_streaks)-min(streak_stats.pct_made_streaks))
+color_feature = streak_stats.pct_made_streaks
+sc=ax.scatter(xx,yy_made,c=color_feature, s=60, cmap = mpl.cm.bwr)
 m, b = np.polyfit(xx, yy_made, 1)
 xx_fit = np.array(range(32,49))
-plt.plot(xx_fit, m*xx_fit + b, '-g')
+#plt.plot(xx_fit, m*xx_fit + b, '-g')
 #ax.scatter(xx,yy_miss,color=(255/256,128/256,16/256))
-ymin = 0
-ymax = 45
+ymin = 15
+ymax = 100
 xmin = 32
 xmax = 48
 #plt.plot((35.2, 35.2), (ymin, ymax), 'k-')
@@ -198,22 +192,21 @@ xmax = 48
 #plt.plot((35.2+8.8, 35.2+8.8), (ymin, ymax), 'r-')
 #ax.text(44.1, 41.5, r'+1$\sigma$', color = 'r')
 plt.plot((35.8, 35.8), (ymin, ymax), 'k-')
-ax.text(35.9, 41, 'league' + '\n' + 'average', color = 'k')
-plt.plot((35.2+5.7, 35.2+5.7), (ymin, ymax), 'r-')
-ax.text(40.1, 41.5, r'+1$\sigma$', color = 'r')
+ax.text(35.9, 91, 'league' + '\n' + 'average', color = 'k')
+plt.plot((35.8+5.7, 35.8+5.7), (ymin, ymax), 'r-')
+ax.text(40.1, 91.5, r'+1$\sigma$', color = 'r')
 #plt.plot((35.2-5.7, 35.2-5.7), (ymin, ymax), 'r-')
 #ax.text(40.1, 41.5, r'-1$\sigma$', color = 'r')
 #plt.plot((35.2-8.8, 35.2-8.8), (ymin, ymax), 'r-')
 ax.set_xlabel('FIELD GOAL PERCENTAGE ( > 15 FEET) (%)')
 ax.set_xlim([xmin,xmax])
-ax.set_ylabel('TOTAL NUMBER OF MAKE STREAKS')
+ax.set_ylabel('TOTAL NUMBER OF STREAKS')
 ax.set_ylim([ymin,ymax])
 #ax.text(25.25, 95, r'-1$\sigma$', color = 'r')
 cbr=plt.colorbar(sc)
-cbr.set_label('PERCENTAGE OF MAKE STREAKS (%)')
-ax.set_title('NBA 2013-14 and 2014-15 Seasons Make Streak Stats vs. FGP' + '\n' + '(75th Percentile of Total Streaks)')
-#ax.set_title('20' + season[0:2] + '-' + season[3:5] + ' Number of Streaks: "made" vs. FGP')
-cursor = FollowDotCursor(ax, xx, yy_made, specific_players)
+cbr.set_label('PERCENTAGE MADE STREAKS (%)')
+ax.set_title('NBA 2013-14 and 2014-15 Seasons Total Streak Stats vs. FGP' + '\n' + '(80th Percentile of Total Streaks)')
+FollowDotCursor(ax, xx, yy_made, specific_players)
 plt.grid()
 plt.show()
 
@@ -240,7 +233,7 @@ ax.set_ylim([ymin,ymax])
 ax.set_title('NBA 2013-14 and 2014-15 Seasons Make Streak Stats vs. FGP' + '\n' + '(75th Percentile of Total Streaks)')
 cbr=plt.colorbar(sc)
 cbr.set_label('PERCENTAGE OF MAKE STREAKS (%)')
-cursor = FollowDotCursor(ax, xx, yy_made, specific_players)
+cursor = FDC.FollowDotCursor(ax, xx, yy_made, specific_players)
 plt.grid()
 plt.show()
 
