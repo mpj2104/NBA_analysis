@@ -11,7 +11,9 @@ import numpy as np
 import itertools
 import re
 
+### Algorithm for finding streaks in shotlog data (shot_data) for all games (game_IDs) played by a specific player (ID)
 def find_consecutive_shots(ID,game_IDs,shot_data,min_shot_dist):   
+    ### Creating skeletons of pandas dataframes to fill with streak information    
     d = {'PLAYER_ID':pd.Series(np.zeros(100)+ID),
          'season_ID':pd.Series(),
          'streak_num':pd.Series(range(100)),
@@ -42,13 +44,15 @@ def find_consecutive_shots(ID,game_IDs,shot_data,min_shot_dist):
     del d
     del f
     
+    ### Start looping through shotlogs game-by-game
     streak_counter = 0 # keeps track of the streak number
     streak_details_idx = 0 # keeps track of the streak details index number    
     for game in game_IDs: # iterate over each game played 
         temp_data = shot_data[(shot_data.GAME_ID==game) & (shot_data.SHOT_DIST>=min_shot_dist)] # looks at shot data for particular game and for particular shot distance       
         temp_shot_groups = [] # will store groups of consecutive identical shot results
         length_shot_groups = [] # will store lengths of those groups (missed,missed,missed = 3)
-        streak_key = [] # identifies streak type        
+        streak_key = [] # identifies streak type
+        ### use itertools to find clusters of consecutive identical shot results (e.g.: made,made;missed,missed,missed,missed)
         for k,g in itertools.groupby(temp_data.SHOT_RESULT):
             streak_key.append(k)            
             temp_shot_groups.append(list(g))
@@ -61,7 +65,8 @@ def find_consecutive_shots(ID,game_IDs,shot_data,min_shot_dist):
         else:
             season = np.array(temp_data.season_ID)[0]
             shot_numbers = np.array(temp_data.SHOT_NUMBER)     
-            start_shot_num_ind = [] # identify starting shot number for select shot groups        
+            start_shot_num_ind = [] # identify starting shot number for select shot groups   
+            ### Start looping through each group of common shot results with at least 3 shots
             for ind in shot_group_ind[0]:
                 start_shot_num_ind.append(np.sum(length_shot_groups[0:ind]))
                 temp_shot_num_ind = range(start_shot_num_ind[-1],start_shot_num_ind[-1]+length_shot_groups[ind])
@@ -123,7 +128,7 @@ def find_consecutive_shots(ID,game_IDs,shot_data,min_shot_dist):
                     df.streak_length[streak_counter-1] = length_shot_groups[ind]
                 else:
                     continue
-    
+    ### Final cleanup of pandas dataframes
     df = df.drop(df.index[streak_counter:])
     df_details = df_details.drop(df_details.index[streak_details_idx:])        
     return (df,df_details)
